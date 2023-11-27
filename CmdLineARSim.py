@@ -59,6 +59,8 @@ def main():
     logging.debug('The configuration(s) to be built is: %s', args.configuration)
     logging.debug('Build mode:  %s', args.buildMode) 
     logging.debug('Start simulation when creation is complete:  %s', args.startSim)
+    logging.debug('User files:  %s', args.userFiles)
+    logging.debug('HMI files:  %s', args.hmiFiles)
 
     project = ASTools.Project(args.project)
 
