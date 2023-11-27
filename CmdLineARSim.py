@@ -97,7 +97,7 @@ def main():
             shutil.copytree(args.userFiles, userPath)
 
         # Add custom directory with HMI data if configured. 
-        if args.userFiles != '':
+        if args.hmiFiles != '':
             hmiPath = os.path.join(destination, 'HMI')
             shutil.copytree(args.hmiFiles, hmiPath, ignore=shutil.ignore_patterns('node_modules'))
      
