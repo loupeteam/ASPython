@@ -1049,16 +1049,17 @@ class Package(xmlAsFile):
         if path is None: raise FileNotFoundError(path)
         # Create the element from path to be added
         attributes = {}
-        if reference: attributes['Reference'] = True
         attributes['Type'] = getPkgType(path)
         if attributes['Type'] == 'Library':
             attributes['Language'] = getLibraryType(path)
         if attributes['Type'] == 'Program':
             attributes['Language'] = getProgramType(path)
+        if reference: 
+            attributes['Reference'] = "true"
 
         element = ET.Element('Object', attrib=attributes)
         if reference:
-            element.text = os.path.abspath(path)
+                element.text = os.path.abspath(path)
         else:
             element.text = os.path.basename(path)
         element.tail = "\n" #+2*"  " Just stick with newline for now
