@@ -724,7 +724,13 @@ class Project(xmlAsFile):
                     for item in objects:
                         # Look for referenced library entries, and add them to the list of libraries.
                         if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
-                            lib = Library(os.path.join(self.sourcePath, '..', item.text))
+                            if item.text[0] == '\\':
+                                # starts with backlash, means path is relative to location of .apj
+                                path = '.' + os.path.join('\\', os.path.normpath(item.text))  # Add '.' so os.path interptrets as relative path
+                            else:
+                                # path is absolute
+                                path = os.path.normpath(item.text)
+                            lib = Library(path)
                             self.libraries.append(lib)
         return self
 
