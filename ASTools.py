@@ -1129,7 +1129,8 @@ class SwDeploymentTable(xmlAsFile):
         self.write()
 
     def _createLibraryElement(self, libraryFolder, name, memory: str = 'UserROM', attributeOverrides = {}) -> ET.Element: 
-        language = getLibraryType(os.path.join(libraryFolder, name))
+        lbyPath = getLibraryPathInPackage(libraryFolder, name)
+        language = getLibraryType(lbyPath)
         splitPath = os.path.split(libraryFolder)
         parentFolder = splitPath[-1]
         # Create the element from the provided arguments. 
@@ -1263,6 +1264,40 @@ def getConfigType(config: BuildConfig) -> str:
                     return value
 
     return sg4
+
+# Retrieve the path to the library (location of .lby), given a package and the library name
+# Provides abstraction, because the library may be a reference in a different directory
+def getLibraryPathInPackage(libraryPackagePath, libraryName):
+    asPackage = Package(libraryPackagePath)
+
+    for object in asPackage.objectList:
+        if object.attrib.get('Reference', 'false') == 'true' and libraryName.lower() in object.text.lower():
+            # In this case, object text contains path to library folder
+
+            # Note: Below are valid and invalid values for paths, as observed in AS4.11:
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\src\atn\src\ar\atn</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\.\src\atn\src\ar\atn</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\ANSIC.lby</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">.\src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\\atn\\src\\ar\\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">/src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">//src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">src\atn\src\ar\atn</Object>
+
+            if object.text[0] == '\\':
+                # starts with backlash, means path is relative to location of .apj
+                return '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+            else:
+                # path is absolute
+                return os.path.normpath(object.text)
+        elif object.text.lower() == libraryName.lower():
+            return os.path.join(libraryPackagePath, libraryName)
+    
+    return None
+
+
 # TODO: Needed by Library and Package Class. Maybe leave as function
 def getLibraryType(path: str) -> str:
     if os.path.exists(os.path.join(path, 'ANSIC.lby')): 
