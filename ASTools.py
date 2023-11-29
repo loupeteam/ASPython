@@ -1059,7 +1059,14 @@ class Package(xmlAsFile):
 
         element = ET.Element('Object', attrib=attributes)
         if reference:
+            # Note: From empirical testing in AS, the path to a referenced library must be
+            #       relative, if the source is somewhere within  the folder where the .apj lives
+            #       absolute, if the source is somewhere outside the folder where the .apj lives
+
+            if os.path.isabs(path):
                 element.text = os.path.abspath(path)
+            else:
+                element.text = os.path.normpath(os.path.join('\\', path))
         else:
             element.text = os.path.basename(path)
         element.tail = "\n" #+2*"  " Just stick with newline for now
