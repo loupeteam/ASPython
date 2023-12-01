@@ -8,7 +8,7 @@
 """
 @title CmdLinePackageHmi
 @description This python script takes in command line arguments 
-and packages a webHMI-based HMI
+and packages a Loupe UX-based HMI
 
 0.1.0 - Synchronize all script versions
 0.0.1 - Initial release
@@ -33,7 +33,7 @@ import _version
 def main():
 
     # Parse arguments from the command line 
-    parser = argparse.ArgumentParser(description='Package up a webHMI-based HMI')
+    parser = argparse.ArgumentParser(description='Package up a Loupe UX-based HMI')
     # High-level application information. 
     parser.add_argument('-s', '--source', type=str, help='Source folder where the HMI files are located (i.e. where main package.json is located)', default='C:/Projects/Publisher/Project/HMIApp/Electron')
     parser.add_argument('-o', '--output', type=str, help='Destination folder where packaged files are placed')
