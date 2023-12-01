@@ -78,7 +78,7 @@ Type: filesandordirs; Name: "{app}"
 #if IncludeHmi == "yes"
 
     [Components]
-    Name: "HMI"; Description: "webHMI user interface"; Types: full custom;
+    Name: "HMI"; Description: "Loupe UX user interface"; Types: full custom;
 
     [Files]
     Source: {#HMIDirectory}\*; DestDir: "{app}\HMI"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: HMI;
