@@ -16,7 +16,7 @@ The core capabilities live in the [ASTools](./ASTools.py) script, which contains
 - [CmdLineExportLib.py](CmdLineExportLib.py): export Automation Studio libraries into shareable binary or source formats. 
 - [CmdLineGetSafetyCrc.py](CmdLineGetSafetyCrc.py): retrieve the CRC of the specified B&R Safe Application in a project. 
 - [CmdLineGetVersion.py](CmdLineGetVersion.py): retrieve the build version of an AS project. 
-- [CmdLinePackageHmi.py](CmdLinePackageHmi.py): package a webHMI-based HMI for distribution. 
+- [CmdLinePackageHmi.py](CmdLinePackageHmi.py): package a Loupe UX-based HMI for distribution. 
 - [CmdLineRunUnitTests.py](CmdLineRunUnitTests.py): run the unit tests that are defined in the Automation Studio project. Note that this wrapper uses the [UnitTestTools.py](UnitTestTools.py) backend script. 
 
 For a more detailed look at each script's API, please call the script with the `-h` argument. For example, `python CmdLineBuild.py -h`. 
