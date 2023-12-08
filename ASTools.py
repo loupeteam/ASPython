@@ -1161,7 +1161,9 @@ class SwDeploymentTable(xmlAsFile):
         return element
 
     def _createTaskElement(self, taskFolder, taskName, memory: str = 'UserROM') -> ET.Element:
-        task = Task(os.path.join('Logical', taskFolder, taskName))
+        actualTaskFolderPath = getActualPathFromLogicalPath(taskFolder)
+        prgPath = os.path.join(actualTaskFolderPath, taskName)
+        task = Task(prgPath)
         language = task.type
         # Split the path, and add to it, since cpu.sw expects a '.' separated path. 
         splitPath = os.path.normpath(taskFolder).split(os.sep)
@@ -1310,6 +1312,31 @@ def getLibraryPathInPackage(libraryPackagePath, libraryName):
     
     return None
 
+# Gets actual path for the "Logical Path", as viewed in AS
+# Handles the situation in which "Reference" packages exist in path chain
+def getActualPathFromLogicalPath(logicalPath):
+    splitPath = os.path.normpath(logicalPath).split(os.sep)    
+    currentPath = "./Logical/"
+    for step in splitPath:
+        if step.lower() in [s.lower() for s in os.listdir(currentPath)]:
+            currentPath = os.path.join(currentPath, step)
+        elif 'package.pkg' in [s.lower() for s in os.listdir(currentPath)]:
+            currentAsPackage = Package(currentPath)
+            for object in currentAsPackage.objectList:
+                found = False
+                if object.attrib.get('Reference', '') == 'true' and step in object.text:
+                    if object.text[0] == '\\':
+                        # starts with backlash, means path is relative to location of .apj
+                        currentPath = '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+                    else:
+                        # path is absolute
+                        currentPath = os.path.normpath(object.text)
+                found = True
+            if not found:
+                return None
+        else:
+            return None
+    return currentPath
 
 # TODO: Needed by Library and Package Class. Maybe leave as function
 def getLibraryType(path: str) -> str:
