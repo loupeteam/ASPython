@@ -1130,7 +1130,7 @@ class SwDeploymentTable(xmlAsFile):
 
     def deployTask(self, taskFolder, taskName, taskClass):
         # First get a handle on the target task class.
-        cyclicName = "Cyclic#" + [s for s in taskClass if s.isdigit()][0]
+        cyclicName = "Cyclic#" + [s for s in str(taskClass) if s.isdigit()][0]
         tc = self.find(f"TaskClass[@Name='{cyclicName}']")
         # Now check to see if the task has already been deployed here (if so, skip deployment).
         preexistingTask = self.find(f"TaskClass[@Name='{cyclicName}']","Task[@Name='" + taskName[:10] + "']")
