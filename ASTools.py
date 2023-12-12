@@ -724,7 +724,13 @@ class Project(xmlAsFile):
                     for item in objects:
                         # Look for referenced library entries, and add them to the list of libraries.
                         if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
-                            lib = Library(os.path.join(self.sourcePath, '..', item.text))
+                            if item.text[0] == '\\':
+                                # starts with backlash, means path is relative to location of .apj
+                                path = '.' + os.path.join('\\', os.path.normpath(item.text))  # Add '.' so os.path interptrets as relative path
+                            else:
+                                # path is absolute
+                                path = os.path.normpath(item.text)
+                            lib = Library(path)
                             self.libraries.append(lib)
         return self
 
@@ -1049,16 +1055,24 @@ class Package(xmlAsFile):
         if path is None: raise FileNotFoundError(path)
         # Create the element from path to be added
         attributes = {}
-        if reference: attributes['Reference'] = True
         attributes['Type'] = getPkgType(path)
         if attributes['Type'] == 'Library':
             attributes['Language'] = getLibraryType(path)
         if attributes['Type'] == 'Program':
             attributes['Language'] = getProgramType(path)
+        if reference: 
+            attributes['Reference'] = "true"
 
         element = ET.Element('Object', attrib=attributes)
         if reference:
-            element.text = os.path.abspath(path)
+            # Note: From empirical testing in AS, the path to a referenced library must be
+            #       relative, if the source is somewhere within  the folder where the .apj lives
+            #       absolute, if the source is somewhere outside the folder where the .apj lives
+
+            if os.path.isabs(path):
+                element.text = os.path.abspath(path)
+            else:
+                element.text = os.path.normpath(os.path.join('\\', path))
         else:
             element.text = os.path.basename(path)
         element.tail = "\n" #+2*"  " Just stick with newline for now
@@ -1116,7 +1130,7 @@ class SwDeploymentTable(xmlAsFile):
 
     def deployTask(self, taskFolder, taskName, taskClass):
         # First get a handle on the target task class.
-        cyclicName = "Cyclic#" + [s for s in taskClass if s.isdigit()][0]
+        cyclicName = "Cyclic#" + [s for s in str(taskClass) if s.isdigit()][0]
         tc = self.find(f"TaskClass[@Name='{cyclicName}']")
         # Now check to see if the task has already been deployed here (if so, skip deployment).
         preexistingTask = self.find(f"TaskClass[@Name='{cyclicName}']","Task[@Name='" + taskName[:10] + "']")
@@ -1128,7 +1142,8 @@ class SwDeploymentTable(xmlAsFile):
         self.write()
 
     def _createLibraryElement(self, libraryFolder, name, memory: str = 'UserROM', attributeOverrides = {}) -> ET.Element: 
-        language = getLibraryType(os.path.join(libraryFolder, name))
+        lbyPath = getLibraryPathInPackage(libraryFolder, name)
+        language = getLibraryType(lbyPath)
         splitPath = os.path.split(libraryFolder)
         parentFolder = splitPath[-1]
         # Create the element from the provided arguments. 
@@ -1146,7 +1161,9 @@ class SwDeploymentTable(xmlAsFile):
         return element
 
     def _createTaskElement(self, taskFolder, taskName, memory: str = 'UserROM') -> ET.Element:
-        task = Task(os.path.join('Logical', taskFolder, taskName))
+        actualTaskFolderPath = getActualPathFromLogicalPath(taskFolder)
+        prgPath = os.path.join(actualTaskFolderPath, taskName)
+        task = Task(prgPath)
         language = task.type
         # Split the path, and add to it, since cpu.sw expects a '.' separated path. 
         splitPath = os.path.normpath(taskFolder).split(os.sep)
@@ -1262,6 +1279,65 @@ def getConfigType(config: BuildConfig) -> str:
                     return value
 
     return sg4
+
+# Retrieve the path to the library (location of .lby), given a package and the library name
+# Provides abstraction, because the library may be a reference in a different directory
+def getLibraryPathInPackage(libraryPackagePath, libraryName):
+    asPackage = Package(libraryPackagePath)
+
+    for object in asPackage.objectList:
+        if object.attrib.get('Reference', 'false') == 'true' and libraryName.lower() in object.text.lower():
+            # In this case, object text contains path to library folder
+
+            # Note: Below are valid and invalid values for paths, as observed in AS4.11:
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\src\atn\src\ar\atn</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\.\src\atn\src\ar\atn</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\</Object>
+            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\ANSIC.lby</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">.\src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\\atn\\src\\ar\\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">/src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">//src\atn\src\ar\atn</Object>
+            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">src\atn\src\ar\atn</Object>
+
+            if object.text[0] == '\\':
+                # starts with backlash, means path is relative to location of .apj
+                return '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+            else:
+                # path is absolute
+                return os.path.normpath(object.text)
+        elif object.text.lower() == libraryName.lower():
+            return os.path.join(libraryPackagePath, libraryName)
+    
+    return None
+
+# Gets actual path for the "Logical Path", as viewed in AS
+# Handles the situation in which "Reference" packages exist in path chain
+def getActualPathFromLogicalPath(logicalPath):
+    splitPath = os.path.normpath(logicalPath).split(os.sep)    
+    currentPath = "./Logical/"
+    for step in splitPath:
+        if step.lower() in [s.lower() for s in os.listdir(currentPath)]:
+            currentPath = os.path.join(currentPath, step)
+        elif 'package.pkg' in [s.lower() for s in os.listdir(currentPath)]:
+            currentAsPackage = Package(currentPath)
+            for object in currentAsPackage.objectList:
+                found = False
+                if object.attrib.get('Reference', '') == 'true' and step in object.text:
+                    if object.text[0] == '\\':
+                        # starts with backlash, means path is relative to location of .apj
+                        currentPath = '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+                    else:
+                        # path is absolute
+                        currentPath = os.path.normpath(object.text)
+                found = True
+            if not found:
+                return None
+        else:
+            return None
+    return currentPath
+
 # TODO: Needed by Library and Package Class. Maybe leave as function
 def getLibraryType(path: str) -> str:
     if os.path.exists(os.path.join(path, 'ANSIC.lby')): 
