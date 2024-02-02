@@ -90,12 +90,12 @@ def main():
         project.createSim(config, destination=destination, startSim=args.startSim)
 
         # Add custom directory with user partition data if configured. 
-        if args.userFiles != '':
+        if args.userFiles != '' and args.userFiles != None:
             userPath = os.path.join(destination, 'ARSimUser')
             shutil.copytree(args.userFiles, userPath)
 
         # Add custom directory with HMI data if configured. 
-        if args.userFiles != '':
+        if args.hmiFiles != '' and args.hmiFiles != None:
             hmiPath = os.path.join(destination, 'HMI')
             shutil.copytree(args.hmiFiles, hmiPath, ignore=shutil.ignore_patterns('node_modules'))
      
