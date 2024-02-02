@@ -40,8 +40,8 @@ def main():
     parser.add_argument('-c','--configuration', nargs='+', type=str,  help='AS configuration you want to build')
     parser.add_argument('-bm', '--buildMode', type=str, help='AS build mode you want executed', default='None', choices=['Rebuild', 'Build','BuildAndTransfer', 'BuildAndCreateCompactFlash', 'None'])
     parser.add_argument('-ss', '--startSim', action='store_true', help='Option to have ARSim start after ARSim creation')
-    parser.add_argument('-uf', '--userFiles', type=str, help='Path to the folder containing user files to get included with simulator')
-    parser.add_argument('-hf', '--hmiFiles', type=str, help='Path to the folder containing HMI files to get included with simulator')
+    parser.add_argument('-uf', '--userFiles', type=str, help='Path to the folder containing user files to get included with simulator', default='')
+    parser.add_argument('-hf', '--hmiFiles', type=str, help='Path to the folder containing HMI files to get included with simulator', default='')
     parser.add_argument('-l', '--logLevel', type=str.upper, help='Log level', choices=['DEBUG','INFO','WARNING', 'ERROR'], default='')
     parser.add_argument('-v','--version', action='version', version='%(prog)s {version}'.format(version=_version.__version__))
     args = parser.parse_args()
@@ -59,6 +59,8 @@ def main():
     logging.debug('The configuration(s) to be built is: %s', args.configuration)
     logging.debug('Build mode:  %s', args.buildMode) 
     logging.debug('Start simulation when creation is complete:  %s', args.startSim)
+    logging.debug('User files:  %s', args.userFiles)
+    logging.debug('HMI files:  %s', args.hmiFiles)
 
     project = ASTools.Project(args.project)
 
@@ -90,12 +92,12 @@ def main():
         project.createSim(config, destination=destination, startSim=args.startSim)
 
         # Add custom directory with user partition data if configured. 
-        if args.userFiles != '' and args.userFiles != None:
+        if args.userFiles != '':
             userPath = os.path.join(destination, 'ARSimUser')
             shutil.copytree(args.userFiles, userPath)
 
         # Add custom directory with HMI data if configured. 
-        if args.hmiFiles != '' and args.hmiFiles != None:
+        if args.hmiFiles != '':
             hmiPath = os.path.join(destination, 'HMI')
             shutil.copytree(args.hmiFiles, hmiPath, ignore=shutil.ignore_patterns('node_modules'))
      
