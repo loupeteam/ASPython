@@ -724,7 +724,8 @@ class Project(xmlAsFile):
                     for item in objects:
                         # Look for referenced library entries, and add them to the list of libraries.
                         if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
-                            lib = Library(os.path.join(self.sourcePath, '..', item.text))
+                            path = convertAsPathToWinPath(item.text)
+                            lib = Library(path)
                             self.libraries.append(lib)
         return self
 
@@ -1049,16 +1050,22 @@ class Package(xmlAsFile):
         if path is None: raise FileNotFoundError(path)
         # Create the element from path to be added
         attributes = {}
-        if reference: attributes['Reference'] = True
         attributes['Type'] = getPkgType(path)
         if attributes['Type'] == 'Library':
             attributes['Language'] = getLibraryType(path)
         if attributes['Type'] == 'Program':
             attributes['Language'] = getProgramType(path)
+        if reference: 
+            attributes['Reference'] = "true"
 
         element = ET.Element('Object', attrib=attributes)
         if reference:
-            element.text = os.path.abspath(path)
+            # Note: From empirical testing in AS, the path to a referenced library must be relative, if the source is somewhere within the "Logical" folder
+
+            if os.path.isabs(path):
+                element.text = os.path.abspath(path)
+            else:
+                element.text = os.path.normpath(os.path.join('\\', path))
         else:
             element.text = os.path.basename(path)
         element.tail = "\n" #+2*"  " Just stick with newline for now
@@ -1116,7 +1123,7 @@ class SwDeploymentTable(xmlAsFile):
 
     def deployTask(self, taskFolder, taskName, taskClass):
         # First get a handle on the target task class.
-        cyclicName = "Cyclic#" + [s for s in taskClass if s.isdigit()][0]
+        cyclicName = "Cyclic#" + [s for s in str(taskClass) if s.isdigit()][0]
         tc = self.find(f"TaskClass[@Name='{cyclicName}']")
         # Now check to see if the task has already been deployed here (if so, skip deployment).
         preexistingTask = self.find(f"TaskClass[@Name='{cyclicName}']","Task[@Name='" + taskName[:10] + "']")
@@ -1128,7 +1135,8 @@ class SwDeploymentTable(xmlAsFile):
         self.write()
 
     def _createLibraryElement(self, libraryFolder, name, memory: str = 'UserROM', attributeOverrides = {}) -> ET.Element: 
-        language = getLibraryType(os.path.join(libraryFolder, name))
+        lbyPath = getLibraryPathInPackage(libraryFolder, name)
+        language = getLibraryType(lbyPath)
         splitPath = os.path.split(libraryFolder)
         parentFolder = splitPath[-1]
         # Create the element from the provided arguments. 
@@ -1146,7 +1154,9 @@ class SwDeploymentTable(xmlAsFile):
         return element
 
     def _createTaskElement(self, taskFolder, taskName, memory: str = 'UserROM') -> ET.Element:
-        task = Task(os.path.join('Logical', taskFolder, taskName))
+        actualTaskFolderPath = getActualPathFromLogicalPath(taskFolder)
+        prgPath = os.path.join(actualTaskFolderPath, taskName)
+        task = Task(prgPath)
         language = task.type
         # Split the path, and add to it, since cpu.sw expects a '.' separated path. 
         splitPath = os.path.normpath(taskFolder).split(os.sep)
@@ -1262,6 +1272,81 @@ def getConfigType(config: BuildConfig) -> str:
                     return value
 
     return sg4
+
+# Retrieve the path to the library (location of .lby), given a package and the library name
+# Provides abstraction, because the library may be a reference in a different directory
+def getLibraryPathInPackage(libraryPackagePath, libraryName):
+    asPackage = Package(libraryPackagePath)
+
+    for object in asPackage.objectList:
+        if object.attrib.get('Reference', 'false') == 'true' and libraryName.lower() in object.text.lower():
+            # Library not in folder (is referenced)
+            return convertAsPathToWinPath(object.text)
+
+        elif object.text.lower() == libraryName.lower():
+            # library is in folder (not referenced)
+            return os.path.join(libraryPackagePath, libraryName)
+    
+    return None
+
+# Gets actual path for the "Logical Path", as viewed in AS
+# Handles the situation in which "Reference" packages exist in path chain
+def getActualPathFromLogicalPath(logicalPath):
+    splitPath = os.path.normpath(logicalPath).split(os.sep)    
+    currentPath = "./Logical/"
+    for step in splitPath:
+        if step.lower() in [s.lower() for s in os.listdir(currentPath)]:
+            currentPath = os.path.join(currentPath, step)
+        elif 'package.pkg' in [s.lower() for s in os.listdir(currentPath)]:
+            currentAsPackage = Package(currentPath)
+            found = False
+            for object in currentAsPackage.objectList:
+                if object.attrib.get('Reference', '') == 'true' and step in object.text:
+
+                    currentPath = convertAsPathToWinPath(object.text)
+                    found = True
+            if not found:
+                return None
+        else:
+            return None
+    return currentPath
+
+
+# Get AsPath Type
+# Returns "relative", "absolute", or None
+# Nuances of AS Paths:
+#   - if the path begins with '\' or '..' it is a relative path. In Windows paths, starting with '\' is interpretated as an absolute path from the C: drive
+#   - Paths cannot begin with '.', though '\.\some\path' is respected
+def getAsPathType(path):
+    if path[0] == '\\' or path[0:2] == "..":
+        # starts with backlash or "..", means path is relative to location of .apj
+        return "relative"
+    elif path[0] == '/' or path[0:2] == "C:":
+        # starts with fwdslash or "C:", means path is absolute
+        return "absolute"
+    else:
+        return None
+
+# Convert AS Path to Windows Path
+# AS Paths (e.g. paths to "Referenced" files/folders in a package.pkg file) have a slightly different syntax than Windows, thus conversion is necessary
+def convertAsPathToWinPath(asPath):
+    if getAsPathType(asPath) == 'relative':
+        return '.' + os.path.join(os.sep, os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+    else:
+        # path is absolute or unidentified
+        return os.path.normpath(asPath)
+
+# Convert Windows Path to AS Path
+# (see description notes for convertAsPathToWinPath())
+def convertWinPathToAsPath(winPath):
+    if os.path.isabs(winPath):
+        # path is absolute
+        return os.path.normpath(winPath)
+    else:
+        # path is relative
+        return os.path.join('\\', os.path.normpath(winPath))
+
+
 # TODO: Needed by Library and Package Class. Maybe leave as function
 def getLibraryType(path: str) -> str:
     if os.path.exists(os.path.join(path, 'ANSIC.lby')): 
@@ -1475,7 +1560,7 @@ def createPkgElement(path: str, reference=False) -> ET.Element:
 
     element = ET.Element('Object', attrib=attributes)
     if reference:
-        element.text = os.path.abspath(path)
+        element.text = convertWinPathToAsPath(path)
     else:
         element.text = os.path.basename(path)
     element.tail = "\n" #+2*"  " Just stick with newline for now
