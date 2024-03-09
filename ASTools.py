@@ -724,12 +724,7 @@ class Project(xmlAsFile):
                     for item in objects:
                         # Look for referenced library entries, and add them to the list of libraries.
                         if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
-                            if item.text[0] == '\\':
-                                # starts with backlash, means path is relative to location of .apj
-                                path = '.' + os.path.join('\\', os.path.normpath(item.text))  # Add '.' so os.path interptrets as relative path
-                            else:
-                                # path is absolute
-                                path = os.path.normpath(item.text)
+                            path = convertAsPathToWinPath(item.text)
                             lib = Library(path)
                             self.libraries.append(lib)
         return self
@@ -1065,9 +1060,7 @@ class Package(xmlAsFile):
 
         element = ET.Element('Object', attrib=attributes)
         if reference:
-            # Note: From empirical testing in AS, the path to a referenced library must be
-            #       relative, if the source is somewhere within  the folder where the .apj lives
-            #       absolute, if the source is somewhere outside the folder where the .apj lives
+            # Note: From empirical testing in AS, the path to a referenced library must be relative, if the source is somewhere within the "Logical" folder
 
             if os.path.isabs(path):
                 element.text = os.path.abspath(path)
@@ -1287,27 +1280,11 @@ def getLibraryPathInPackage(libraryPackagePath, libraryName):
 
     for object in asPackage.objectList:
         if object.attrib.get('Reference', 'false') == 'true' and libraryName.lower() in object.text.lower():
-            # In this case, object text contains path to library folder
+            # Library not in folder (is referenced)
+            return convertAsPathToWinPath(object.text)
 
-            # Note: Below are valid and invalid values for paths, as observed in AS4.11:
-            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\src\atn\src\ar\atn</Object>
-            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">\.\src\atn\src\ar\atn</Object>
-            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\</Object>
-            # Valid:        <Object Type="Library" Language="ANSIC" Reference="true">C:\Users\dwiens\Desktop\TEMP\atn\src\Ar\ATN\ANSIC.lby</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">.\src\atn\src\ar\atn</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\\atn\\src\\ar\\atn</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">\\src\atn\src\ar\atn</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">/src\atn\src\ar\atn</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">//src\atn\src\ar\atn</Object>
-            # Not Valid:    <Object Type="Library" Language="ANSIC" Reference="true">src\atn\src\ar\atn</Object>
-
-            if object.text[0] == '\\':
-                # starts with backlash, means path is relative to location of .apj
-                return '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
-            else:
-                # path is absolute
-                return os.path.normpath(object.text)
         elif object.text.lower() == libraryName.lower():
+            # library is in folder (not referenced)
             return os.path.join(libraryPackagePath, libraryName)
     
     return None
@@ -1322,21 +1299,53 @@ def getActualPathFromLogicalPath(logicalPath):
             currentPath = os.path.join(currentPath, step)
         elif 'package.pkg' in [s.lower() for s in os.listdir(currentPath)]:
             currentAsPackage = Package(currentPath)
+            found = False
             for object in currentAsPackage.objectList:
-                found = False
                 if object.attrib.get('Reference', '') == 'true' and step in object.text:
-                    if object.text[0] == '\\':
-                        # starts with backlash, means path is relative to location of .apj
-                        currentPath = '.' + os.path.join('\\', os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
-                    else:
-                        # path is absolute
-                        currentPath = os.path.normpath(object.text)
-                found = True
+
+                    currentPath = convertAsPathToWinPath(object.text)
+                    found = True
             if not found:
                 return None
         else:
             return None
     return currentPath
+
+
+# Get AsPath Type
+# Returns "relative", "absolute", or None
+# Nuances of AS Paths:
+#   - if the path begins with '\' or '..' it is a relative path. In Windows paths, starting with '\' is interpretated as an absolute path from the C: drive
+#   - Paths cannot begin with '.', though '\.\some\path' is respected
+def getAsPathType(path):
+    if path[0] == '\\' or path[0:2] == "..":
+        # starts with backlash or "..", means path is relative to location of .apj
+        return "relative"
+    elif path[0] == '/' or path[0:2] == "C:":
+        # starts with fwdslash or "C:", means path is absolute
+        return "absolute"
+    else:
+        return None
+
+# Convert AS Path to Windows Path
+# AS Paths (e.g. paths to "Referenced" files/folders in a package.pkg file) have a slightly different syntax than Windows, thus conversion is necessary
+def convertAsPathToWinPath(asPath):
+    if getAsPathType(asPath) == 'relative':
+        return '.' + os.path.join(os.sep, os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+    else:
+        # path is absolute or unidentified
+        return os.path.normpath(asPath)
+
+# Convert Windows Path to AS Path
+# (see description notes for convertAsPathToWinPath())
+def convertWinPathToAsPath(winPath):
+    if os.path.isabs(winPath):
+        # path is absolute
+        return os.path.normpath(winPath)
+    else:
+        # path is relative
+        return os.path.join('\\', os.path.normpath(winPath))
+
 
 # TODO: Needed by Library and Package Class. Maybe leave as function
 def getLibraryType(path: str) -> str:
@@ -1551,7 +1560,7 @@ def createPkgElement(path: str, reference=False) -> ET.Element:
 
     element = ET.Element('Object', attrib=attributes)
     if reference:
-        element.text = os.path.abspath(path)
+        element.text = convertWinPathToAsPath(path)
     else:
         element.text = os.path.basename(path)
     element.tail = "\n" #+2*"  " Just stick with newline for now
