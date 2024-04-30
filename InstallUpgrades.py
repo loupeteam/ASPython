@@ -38,27 +38,32 @@ from _version import __version__
 def installBRUpgrade(upgrade:str, brPath:str, asPath:str):
     commandLine = []
     commandLine.append(upgrade)
-    commandLine.append('-G=' + brPath)
-    commandLine.append('-V=' + asPath)
+    commandLine.append('-G="' + brPath + '"')
+
+    if brPath in asPath:
+        commandLine.append('-V="' + asPath + '"')
+    else:
+        commandLine.append('-V="' + brPath + '\\' + asPath + '"')
     commandLine.append('-R=Y')
 
     # Execute the process, and retrieve the process object.
     logging.info('Started installing upgrade ' + upgrade)
-    logging.debug(commandLine)
-    process = subprocess.run(commandLine)   
-    
-    if process.returncode == 0:
+    logging.info(commandLine)
+
+    returncode = os.system(' '.join(commandLine))
+
+    if returncode == 0:
         logging.info('Finished install upgrade ' + upgrade)
     else:
-        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + process.returncode + ')')
+        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + returncode + ')')
     
-    return process.returncode
+    return returncode
 
 def main():
     #parse arguments from the command line 
     parser = argparse.ArgumentParser(description='Install AS upgrades')
     parser.add_argument('upgradePath', type=str, help='Path to single upgrade or a folder containing upgrades')
-    parser.add_argument('-brp','--brpath', type=str, help='Global AS install path', default='C:\\BrAutomation\\')
+    parser.add_argument('-brp','--brpath', type=str, help='Global AS install path', default='C:\\BrAutomation')
     parser.add_argument('-asp','--aspath', type=str, help='AS install path for the desired AS version')
     parser.add_argument('-l', '--logLevel', type=str.upper, help='Log level', choices=['DEBUG','INFO','WARNING', 'ERROR'], default='')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s {version}'.format(version=__version__))   
