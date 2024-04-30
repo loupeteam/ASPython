@@ -54,7 +54,7 @@ def installBRUpgrade(upgrade:str, brPath:str, asPath:str):
     logging.info('Started installing upgrade ' + upgrade)
     logging.info(commandLine)
 
-    process = subprocess.run(' '.join(commandLine), shell=True, capture_output=True)   
+    process = subprocess.run(' '.join(commandLine), shell=False, capture_output=True)   
     # returncode = os.system(' '.join(commandLine))
     # process = subprocess.CompletedProcess(' '.join(commandLine), returncode)
     
