@@ -73,6 +73,7 @@ def main():
     parser.add_argument('upgradePath', type=str, help='Path to single upgrade or a folder containing upgrades')
     parser.add_argument('-brp','--brpath', type=str, help='Global AS install path', default='C:\\BrAutomation')
     parser.add_argument('-asp','--aspath', type=str, help='AS install path for the desired AS version')
+    parser.add_argument('-r', '--recursive', action='store_true', help='Recursively search for upgrades in the upgrade path')
     parser.add_argument('-l', '--logLevel', type=str.upper, help='Log level', choices=['DEBUG','INFO','WARNING', 'ERROR'], default='')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s {version}'.format(version=__version__))   
     args = parser.parse_args()
@@ -116,6 +117,12 @@ def main():
     if os.path.isdir(args.upgradePath):
         # Move into upgrade folder.
         os.chdir(args.upgradePath)
+        if args.recursive:
+            for root, dirs, files in os.walk(args.upgradePath):
+                for upgrade in files:
+                    if upgrade.lower().endswith('.exe'):
+                        installBRUpgrade(os.path.join(root, upgrade), args.brpath, args.aspath)
+        else:
             for upgrade in os.listdir():
                 # If the item is a .exe file, try to install it.
                 if os.path.isfile(upgrade) and upgrade.lower().endswith('.exe'):         
