@@ -38,26 +38,34 @@ from _version import __version__
 def installBRUpgrade(upgrade:str, brPath:str, asPath:str):
     commandLine = []
     commandLine.append(upgrade)
-    commandLine.append('-G="' + brPath + '"')
+    commandLine.append('-G=')
+    commandLine.append('"' + brPath + '"')
 
     if brPath in asPath:
-        commandLine.append('-V="' + asPath + '"')
+        commandLine.append('-V=')
+        commandLine.append('"' + asPath + '"')
     else:
-        commandLine.append('-V="' + brPath + '\\' + asPath + '"')
-    commandLine.append('-R=Y')
+        commandLine.append('-V=')
+        commandLine.append('"' + brPath + '\\' + asPath + '"')
+    commandLine.append('-R')
+    # commandLine.append('Y')
 
     # Execute the process, and retrieve the process object.
     logging.info('Started installing upgrade ' + upgrade)
     logging.info(commandLine)
 
-    returncode = os.system(' '.join(commandLine))
-
-    if returncode == 0:
+    process = subprocess.run(' '.join(commandLine), shell=True, capture_output=True)   
+    # returncode = os.system(' '.join(commandLine))
+    # process = subprocess.CompletedProcess(' '.join(commandLine), returncode)
+    
+    if process.returncode == 0:
         logging.info('Finished install upgrade ' + upgrade)
     else:
-        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + returncode + ')')
+        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + str(process.returncode) + ')')
+        logging.debug('stderr: ' + str(process.stderr))
+        logging.debug('stdout: ' + str(process.stdout))
     
-    return returncode
+    return process.returncode
 
 def main():
     #parse arguments from the command line 
@@ -108,10 +116,10 @@ def main():
     if os.path.isdir(args.upgradePath):
         # Move into upgrade folder.
         os.chdir(args.upgradePath)
-        for upgrade in os.listdir():
-            # If the item is a .exe file, try to install it.
-            if os.path.isfile(upgrade) and upgrade.lower().endswith('.exe'):         
-                installBRUpgrade(upgrade, args.brpath, args.aspath)
+            for upgrade in os.listdir():
+                # If the item is a .exe file, try to install it.
+                if os.path.isfile(upgrade) and upgrade.lower().endswith('.exe'):         
+                    installBRUpgrade(upgrade, args.brpath, args.aspath)
     
     elif os.path.isfile(args.upgradePath) and args.upgradePath.lower().endswith('.exe'):
         os.chdir(os.path.dirname(args.upgradePath)) # We do this to match the case above
