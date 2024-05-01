@@ -38,19 +38,32 @@ from _version import __version__
 def installBRUpgrade(upgrade:str, brPath:str, asPath:str):
     commandLine = []
     commandLine.append(upgrade)
-    commandLine.append('-G=' + brPath)
-    commandLine.append('-V=' + asPath)
-    commandLine.append('-R=Y')
+    commandLine.append('-G=')
+    commandLine.append('"' + brPath + '"')
+
+    if brPath in asPath:
+        commandLine.append('-V=')
+        commandLine.append('"' + asPath + '"')
+    else:
+        commandLine.append('-V=')
+        commandLine.append('"' + brPath + '\\' + asPath + '"')
+    commandLine.append('-R')
+    # commandLine.append('Y')
 
     # Execute the process, and retrieve the process object.
     logging.info('Started installing upgrade ' + upgrade)
-    logging.debug(commandLine)
-    process = subprocess.run(commandLine)   
+    logging.info(commandLine)
+
+    process = subprocess.run(' '.join(commandLine), shell=False, capture_output=True)   
+    # returncode = os.system(' '.join(commandLine))
+    # process = subprocess.CompletedProcess(' '.join(commandLine), returncode)
     
     if process.returncode == 0:
         logging.info('Finished install upgrade ' + upgrade)
     else:
-        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + process.returncode + ')')
+        logging.error('Error while installing upgrade ' + upgrade + ' (return code = ' + str(process.returncode) + ')')
+        logging.debug('stderr: ' + str(process.stderr))
+        logging.debug('stdout: ' + str(process.stdout))
     
     return process.returncode
 
@@ -58,8 +71,9 @@ def main():
     #parse arguments from the command line 
     parser = argparse.ArgumentParser(description='Install AS upgrades')
     parser.add_argument('upgradePath', type=str, help='Path to single upgrade or a folder containing upgrades')
-    parser.add_argument('-brp','--brpath', type=str, help='Global AS install path')
+    parser.add_argument('-brp','--brpath', type=str, help='Global AS install path', default='C:\\BrAutomation')
     parser.add_argument('-asp','--aspath', type=str, help='AS install path for the desired AS version')
+    parser.add_argument('-r', '--recursive', action='store_true', help='Recursively search for upgrades in the upgrade path')
     parser.add_argument('-l', '--logLevel', type=str.upper, help='Log level', choices=['DEBUG','INFO','WARNING', 'ERROR'], default='')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s {version}'.format(version=__version__))   
     args = parser.parse_args()
@@ -103,10 +117,16 @@ def main():
     if os.path.isdir(args.upgradePath):
         # Move into upgrade folder.
         os.chdir(args.upgradePath)
-        for upgrade in os.listdir():
-            # If the item is a .exe file, try to install it.
-            if os.path.isfile(upgrade) and upgrade.lower().endswith('.exe'):         
-                installBRUpgrade(upgrade, args.brpath, args.aspath)
+        if args.recursive:
+            for root, dirs, files in os.walk(args.upgradePath):
+                for upgrade in files:
+                    if upgrade.lower().endswith('.exe'):
+                        installBRUpgrade(os.path.join(root, upgrade), args.brpath, args.aspath)
+        else:
+            for upgrade in os.listdir():
+                # If the item is a .exe file, try to install it.
+                if os.path.isfile(upgrade) and upgrade.lower().endswith('.exe'):         
+                    installBRUpgrade(upgrade, args.brpath, args.aspath)
     
     elif os.path.isfile(args.upgradePath) and args.upgradePath.lower().endswith('.exe'):
         os.chdir(os.path.dirname(args.upgradePath)) # We do this to match the case above
