@@ -1292,8 +1292,10 @@ def getLibraryPathInPackage(libraryPackagePath, libraryName):
 # Gets actual path for the "Logical Path", as viewed in AS
 # Handles the situation in which "Reference" packages exist in path chain
 def getActualPathFromLogicalPath(logicalPath):
-    splitPath = os.path.normpath(logicalPath).split(os.sep)    
-    currentPath = "./Logical/"
+    splitPath = os.path.normpath(logicalPath).split(os.sep)
+    if splitPath[0] == "":
+        splitPath = splitPath[1:]
+    currentPath = "."
     for step in splitPath:
         if step.lower() in [s.lower() for s in os.listdir(currentPath)]:
             currentPath = os.path.join(currentPath, step)
@@ -1302,7 +1304,6 @@ def getActualPathFromLogicalPath(logicalPath):
             found = False
             for object in currentAsPackage.objectList:
                 if object.attrib.get('Reference', '') == 'true' and step in object.text:
-
                     currentPath = convertAsPathToWinPath(object.text)
                     found = True
             if not found:
