@@ -1331,7 +1331,7 @@ def getAsPathType(path):
 # AS Paths (e.g. paths to "Referenced" files/folders in a package.pkg file) have a slightly different syntax than Windows, thus conversion is necessary
 def convertAsPathToWinPath(asPath):
     if getAsPathType(asPath) == 'relative':
-        return '.' + os.path.join(os.sep, os.path.normpath(object.text))  # Add '.' so os.path interptrets as relative path
+        return '.' + os.path.join(os.sep, os.path.normpath(asPath))  # Add '.' so os.path interptrets as relative path
     else:
         # path is absolute or unidentified
         return os.path.normpath(asPath)
