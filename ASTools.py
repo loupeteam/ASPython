@@ -1160,6 +1160,10 @@ class SwDeploymentTable(xmlAsFile):
         language = task.type
         # Split the path, and add to it, since cpu.sw expects a '.' separated path. 
         splitPath = os.path.normpath(taskFolder).split(os.sep)
+        for i, part in enumerate(splitPath):
+            if part.lower() == "logical":
+                splitPath = splitPath[i+1:] # For task element, path must be relative to Logical folder,
+                break                       #   so if "logical" found, get the path parts that follow 
         splitPath.append(taskName)
         splitPath.append('prg')
         # Create the element from the provided arguments. 
