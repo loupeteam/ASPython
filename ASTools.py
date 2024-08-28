@@ -97,11 +97,11 @@ def ASProjetGetConfigs(project: str) -> [str]:
 
     return configs
 
-def batchBuildAsProject(project, ASPath:str, configurations=None, buildMode='Build', tempPath='', logPath='', binaryPath='', simulation=False, additionalArg:Union[str,list,tuple]=None) -> subprocess.CompletedProcess:
+def batchBuildAsProject(project, ASPath:str, configurations=None, buildMode='Build', buildRUCPackage=True, tempPath='', logPath='', binaryPath='', simulation=False, additionalArg:Union[str,list,tuple]=None) -> subprocess.CompletedProcess:
     if configurations is None: configurations = []
 
     for config in configurations:
-        completedProcess = buildASProject(project, ASPath, configuration=config, buildMode=buildMode, tempPath=tempPath, logPath=logPath, binaryPath=binaryPath, simulation=simulation, additionalArg=additionalArg)
+        completedProcess = buildASProject(project, ASPath, configuration=config, buildMode=buildMode, buildRUCPackage=buildRUCPackage, tempPath=tempPath, logPath=logPath, binaryPath=binaryPath, simulation=simulation, additionalArg=additionalArg)
         if completedProcess.returncode > ASReturnCodes["Warnings"]:
             # Call out the end of a failed build
             logging.info(f'Build for configuration {config} has completed with errors, see DEBUG logging for details')
@@ -112,7 +112,7 @@ def batchBuildAsProject(project, ASPath:str, configurations=None, buildMode='Bui
 
     return completedProcess
 
-def buildASProject(project, ASPath:str, configuration='', buildMode='Build', tempPath='', binaryPath='', logPath='', simulation=False, additionalArg:Union[str,list,tuple]=None) -> subprocess.CompletedProcess:
+def buildASProject(project, ASPath:str, configuration='', buildMode='Build', buildRUCPackage=True, tempPath='', binaryPath='', logPath='', simulation=False, additionalArg:Union[str,list,tuple]=None) -> subprocess.CompletedProcess:
     
     commandLine = []
     commandLine.append(ASPath)
@@ -140,7 +140,8 @@ def buildASProject(project, ASPath:str, configuration='', buildMode='Build', tem
     if simulation:
         commandLine.append('-simulation')
 
-    commandLine.append('-buildRUCPackage')
+    if buildRUCPackage:
+        commandLine.append('-buildRUCPackage')
 
     if additionalArg:
         if type(additionalArg) is str:
@@ -780,7 +781,7 @@ class Project(xmlAsFile):
 
         return exportInfo
 
-    def build(self, *configNames, buildMode='Build', tempPath='', binaryPath='', simulation=False, additionalArgs:Union[str,list,tuple]=None):
+    def build(self, *configNames, buildMode='Build', buildRUCPackage=True, tempPath='', binaryPath='', simulation=False, additionalArgs:Union[str,list,tuple]=None):
         for configName in configNames:
             simulation_status = self.getHardwareParameter(configName, 'Simulation')
             # Set simulation properly in hardware before building
@@ -790,7 +791,7 @@ class Project(xmlAsFile):
                 self.setHardwareParameter(configName, 'Simulation', str(int(simulation)))
         
         # TODO: Support should be better supported for return status here. Probably a list
-        return batchBuildAsProject(self.path, getASBuildPath(self.ASVersion), configNames, buildMode, tempPath=tempPath, logPath=self.dirPath, binaryPath=binaryPath, simulation=simulation, additionalArg=additionalArgs)
+        return batchBuildAsProject(self.path, getASBuildPath(self.ASVersion), configNames, buildMode, buildRUCPackage, tempPath=tempPath, logPath=self.dirPath, binaryPath=binaryPath, simulation=simulation, additionalArg=additionalArgs)
 
     def createPIP(self, configName, destination):
         logging.info(f'Creating PIP at {destination}')

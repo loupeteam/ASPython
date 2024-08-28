@@ -35,6 +35,7 @@ def main():
     parser.add_argument('project', type=str, help='Path to AS project you want to build')
     parser.add_argument('-c','--configuration', nargs='+', type=str, help='AS configuration(s) you want to build')
     parser.add_argument('-bm','--buildMode', type=str, help='Type of build in AS', default='Build', choices=['Rebuild', 'Build','BuildAndTransfer', 'BuildAndCreateCompactFlash', 'None']) 
+    parser.add_argument('-rp','--buildRUCPackage', action='store_false', help='Should RUCPackage be built')
     parser.add_argument('-sim','--simulation', action='store_true', help='Should be built for simulation')
     parser.add_argument('-pip', action='store_true', help='Generate a PIP after the build completes')
     parser.add_argument('-l', '--logLevel', type=str.upper, help='Log level', choices=['DEBUG','INFO','WARNING', 'ERROR'], default='')
@@ -53,6 +54,7 @@ def main():
     logging.debug('The project to be built is: %s', args.project)
     logging.debug('The project configuration(s) to be build is: %s', args.configuration)
     logging.debug('The project build mode is: %s', args.buildMode)
+    logging.debug('The RUCPackage will be built: %s', args.buildRUCPackage)
     logging.debug('The project will be built for simulation: %s', args.simulation)
     logging.debug('The log level will be: %s', args.logLevel)
     if args.pip:
@@ -69,7 +71,7 @@ def main():
         #     if project.getHardwareParameter(config, 'Simulation') != '':
         #         project.setHardwareParameter(config, 'Simulation', '0')
 
-        buildStatus = project.build(config, buildMode=args.buildMode, simulation=args.simulation)
+        buildStatus = project.build(config, buildMode=args.buildMode, buildRUCPackage=args.buildRUCPackage, simulation=args.simulation)
 
         if buildStatus.returncode > ASTools.ASReturnCodes['Warnings']:
             sys.exit('Build failed for config {config}')
