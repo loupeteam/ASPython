@@ -726,6 +726,9 @@ class Project(xmlAsFile):
                         # Look for referenced library entries, and add them to the list of libraries.
                         if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
                             path = convertAsPathToWinPath(item.text)
+                            # Since relative paths are relative to project root, we need to convert them to absolute paths.
+                            if path.startswith('.'):
+                                path = os.path.abspath(os.path.join(os.path.dirname(self.path), path))
                             lib = Library(path)
                             self.libraries.append(lib)
         return self
