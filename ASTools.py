@@ -207,7 +207,7 @@ def CreateARSimStructure(RUCPackage:str, destination:str, version:str, startSim:
             # This because silent and autoclose mode do not support starting arsim
             pid = subprocess.Popen(os.path.join(destination, 'ar000loader.exe'), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, creationflags=0x00000008)
     else:
-        logging.debug(f'Error in creating ARSimStructure code {process.returncode}: {PVIReturnCodeText[process.returncode]}')
+        logging.debug(f'Error in creating ARSimStructure code {process.returncode}: {PVIReturnCodeText.get(process.returncode)}')
     
     return process
 
