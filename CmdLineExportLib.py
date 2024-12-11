@@ -16,8 +16,6 @@ import logging
 import os.path
 import shutil
 import sys
-import subprocess
-from typing import Dict, Tuple, Sequence, Union, List, Optional
 
 # External Modules
 import ASTools
@@ -26,7 +24,7 @@ import _version
 def main():
 
     buildStatus = None
-    libBuildConfig:List[ASTools.Project.buildConfigs] = []
+    libBuildConfig: list[ASTools.BuildConfig] = []
 
     # Parse arguments from the command line 
     parser = argparse.ArgumentParser(description='Export libraries from an AS project with command line arguments.')
@@ -67,31 +65,26 @@ def main():
     
     project = ASTools.Project(args.project)
 
-    # TODO: This section of config names to BuildConfig list can probably be improved (next ~85 lines)
-    #       Using something like for each config name project.getConfigByName
-    for buildConfig in project.buildConfigs:
-        if args.configuration != None:
-            if buildConfig.name in args.configuration:
-                libBuildConfig.append(buildConfig)
+    if args.configuration is None:
+        libBuildConfig.extend(project.buildConfigs)
+    else:
+        for configuration in args.configuration:
+            if configuration in project.buildConfigNames:
+                libBuildConfig.append(project.getConfigByName(configuration))
+            else:
+                logging.error('\033[31mNot a configuration in specified project: %s\033[0m', str(configuration))
 
-    if not len(libBuildConfig):
-        logging.error('\033[31mNot a configration in specified project: %s\033[0m', str(args.configuration))
+    if not libBuildConfig:
         sys.exit('Configuration passed in is not part of AS project')
 
-    libBuildConfigNames:List[str] = [config.name for config in libBuildConfig]
-
-    for name in args.configuration:
-        if name not in libBuildConfigNames:
-            logging.error('Configuration name does not exist in project: %s', name)
-    
     if args.buildMode != 'None':
-        for config in args.configuration:
-            buildStatus = project.build(config, buildMode=args.buildMode, simulation=False)
+        for config in libBuildConfig:
+            buildStatus = project.build(config.name, buildMode=args.buildMode, simulation=False)
             
             if buildStatus.returncode > ASTools.ASReturnCodes['Warnings']:
-                sys.exit('Build failed for config {config}')
+                sys.exit(f'Build failed for config {config.name}')
             else:
-                logging.debug('Building of %s Complete!', config)
+                logging.debug('Building of %s Complete!', config.name)
 
     if args.buildMode == 'None' or buildStatus.returncode <= ASTools.ASReturnCodes['Errors']:
         results = project.exportLibraries(args.destination, overwrite=args.overwrite, buildConfigs=libBuildConfig, blacklist=args.blacklist, whitelist=args.whitelist, binary= not args.sourceFile, includeVersion= args.includeVersion )
