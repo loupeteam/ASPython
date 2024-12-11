@@ -994,6 +994,10 @@ class Package(xmlAsFile):
         
         return self
 
+    def addObjectAsReference(self, path):
+        '''Add file or folder to package and directory as reference'''
+        return self._addPkgObject(path, True)
+
     def addObject(self, path, reference=False):
         '''Copy file or folder to package and directory'''
         name = os.path.basename(path)
