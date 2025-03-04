@@ -69,22 +69,20 @@ PVIReturnCodeText = {
     28341: 'Transfer to the corresponding target system is not possible since the AR version on the target system does not yet support the transfer mode'
 }
 
+def getASBasePath(version: str) -> str:
+    return 'C:\\Program Files\\BRAutomation4' if version == 'AS412' else 'C:\\BrAutomation'
+
 def getASPath(version:str) -> str:
-    base = "C:\\BrAutomation"
-    if version.lower() == 'base':
-        return base
-    else:
-        return os.path.join(base, version.upper(), 'Bin-en')
+    return os.path.join(getASBasePath(version), version.upper(), 'Bin-en')
 
 def getASBuildPath(version:str) -> str:
-    if version.lower() == 'base':
-        return getASPath('base')
-    else:
-        return os.path.join(getASPath(version), "BR.AS.Build.exe")
+    return os.path.join(getASPath(version), "BR.AS.Build.exe")
 
 def getPVITransferPath(version:str) -> str:
-    base = getASPath('base')
-    return os.path.join(base, 'PVI', version, 'PVI', 'Tools', 'PVITransfer')
+    base = getASBasePath(version)
+    pviVersion = version.replace('AS','',1)
+    pviVersion = 'V' + pviVersion[:1] + '.' + pviVersion[1:]
+    return os.path.join(base, 'PVI', pviVersion, 'PVI', 'Tools', 'PVITransfer')
 
 def ASProjetGetConfigs(project: str) -> [str]:
 
@@ -799,10 +797,6 @@ class Project(xmlAsFile):
     def createPIP(self, configName, destination):
         logging.info(f'Creating PIP at {destination}')
         
-        # ASVersion is in the format AS45, whereas PVIVersion needs to be in the format V4.5.
-        pviVersion = self.ASVersion.replace('AS','',1)
-        pviVersion = 'V' + pviVersion[:1] + '.' + pviVersion[1:]
-
         # Retrieve the configuration object based on the name.
         config = self.getConfigByName(configName)
 
@@ -818,7 +812,7 @@ class Project(xmlAsFile):
 
         # Call PVITransfer.exe to run the .pil script that was just created. 
         arguments = []
-        arguments.append(os.path.join(getPVITransferPath(pviVersion), 'PVITransfer.exe'))
+        arguments.append(os.path.join(getPVITransferPath(self.ASVersion), 'PVITransfer.exe'))
         arguments.append('-automatic') # bypass GUI prompts
         arguments.append('-silent') # don't show GUI at all
         arguments.append(RUCPilPath)
@@ -840,11 +834,9 @@ class Project(xmlAsFile):
         return self.createSim(configNames, startSim=startSim)
     
     def createSim(self, *configNames, destination, startSim = False):
-        pviVersion = self.ASVersion.replace('AS','',1)
-        pviVersion = 'V' + pviVersion[:1] + '.' + pviVersion[1:]
         for configName in configNames:
             config = self.getConfigByName(configName)
-            CreateARSimStructure(os.path.join(self.binaryPath, config.name, config.hardware, 'RUCPackage', 'RUCPackage.zip'), destination, pviVersion, startSim=startSim)
+            CreateARSimStructure(os.path.join(self.binaryPath, config.name, config.hardware, 'RUCPackage', 'RUCPackage.zip'), destination, self.ASVersion, startSim=startSim)
         pass
 
     def startSim(self, configName:str, build=False):
