@@ -923,7 +923,17 @@ class Project(xmlAsFile):
     @staticmethod
     def _parseASVersion(apj:str) -> str:
         result = re.search('<?AutomationStudio Version="(.*)" ', apj).group(1).split('.')
-        version = ''.join(result[0:2])     
+        # AS <= 4.x installs to versioned folders like AS41, AS45, AS46
+        # (major + minor). AS 6.x installs into a single AS6 folder, with
+        # minor revisions (6.0, 6.1, 6.5, ...) sharing one install path.
+        try:
+            major = int(result[0])
+        except (ValueError, IndexError):
+            major = 0
+        if major >= 6:
+            version = result[0]
+        else:
+            version = ''.join(result[0:2])
         return 'AS' + version
 
     def getHardwareParameter(self, config, paramName) -> str:
