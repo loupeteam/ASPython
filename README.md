@@ -6,7 +6,23 @@ info@loupe.team
 
 # Description
 
-This repo provides Python tooling for interacting with Automation Studio projects in a programmatic way. 
+This repo provides Python tooling for interacting with Automation Studio projects in a programmatic way.
+
+> **0.3.0 refactor**: the codebase is now organised as the [`aspython`](./aspython) package and ships a unified
+> `aspython` CLI with subcommands. The legacy `import ASTools` and `python CmdLineXxx.py …` entry points still
+> work as deprecation shims. Install in editable mode with `pip install -e .[dev]` and run `aspython --help`.
+>
+> | Legacy script                  | New command              |
+> | ------------------------------ | ------------------------ |
+> | `CmdLineBuild.py`              | `aspython build`         |
+> | `CmdLineARSim.py`              | `aspython arsim`         |
+> | `CmdLineExportLib.py`          | `aspython export-libs`   |
+> | `CmdLineDeployLibraries.py`    | `aspython deploy-libs`   |
+> | `CmdLineGetSafetyCrc.py`       | `aspython safety-crc`    |
+> | `CmdLineGetVersion.py`         | `aspython version`       |
+> | `CmdLineCreateInstaller.py`    | `aspython installer`     |
+> | `CmdLinePackageHmi.py`         | `aspython package-hmi`   |
+> | `CmdLineRunUnitTests.py`       | `aspython run-tests`     |
 
 The core capabilities live in the [ASTools](./ASTools.py) script, which contains classes that represent the various levels of an Automation Studio project. Although these can be directly imported into a user script, the more common usage pattern is to wrap this functionality in a user-facing Python script that is intended to be called from the command line directly (with argparse support for argument parsing). Each of these wrapper scripts begin with the `CmdLine` prefix, and their capabilities are briefly described below:
 - [CmdLineARSim.py](CmdLineARSim.py): create an ARsim package for a given AS project. With the options to build the project, include user files, and start the simulator. 

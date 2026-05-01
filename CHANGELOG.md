@@ -1,5 +1,13 @@
 # Change log
 
+- 0.3.0   - Major maintainability refactor
+            - Split `ASTools.py` into a proper `aspython` package (`project`, `library`, `package`, `task`, `deployment`, `config`, `build`, `simulation`, `paths`, `models`, `xml_base`, `returncodes`, `utils`, `installer`, `hmi`, `unittests`, `upgrades`, `cnc`, `logging_setup`)
+            - Unified the nine `CmdLine*.py` scripts behind a single `aspython` CLI with subcommands (`build`, `arsim`, `export-libs`, `deploy-libs`, `safety-crc`, `version`, `installer`, `package-hmi`, `run-tests`); legacy `CmdLine*.py` scripts kept as deprecation shims
+            - Added `pyproject.toml` with console_scripts entry point, dev extras, and a PyInstaller spec under `packaging/`
+            - Added `tests/` (pytest) covering imports, dataclass models, path helpers, and CLI dispatch
+            - Added GitHub Actions CI for Windows
+            - Backwards-compatible: `import ASTools` and `python CmdLineXxx.py …` still work and emit `DeprecationWarning`
+
 - 0.2.2   - Adapt SW task element's path to be relative to Logical
 
 - 0.2.1   - Fix logical path to actual path functions
