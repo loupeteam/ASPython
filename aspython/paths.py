@@ -3,8 +3,35 @@ import os.path
 from typing import Optional
 
 
+# Candidate base directories where B&R Automation Studio may be installed.
+# AS <= 4.x defaults to C:\BrAutomation. AS 6 changed the default to
+# C:\Program Files (x86)\BRAutomation (note: no space in "BRAutomation").
+_AS_BASE_CANDIDATES = [
+    "C:\\BrAutomation",
+    "C:\\Program Files (x86)\\BRAutomation",
+    "C:\\Program Files\\BRAutomation",
+]
+
+
+def _findASBase(version: str = '') -> str:
+    """Return the base BrAutomation directory.
+
+    If a specific version is provided, prefer a base that actually contains
+    a folder for that version. Otherwise return the first base that exists.
+    Falls back to the legacy default 'C:\\BrAutomation' if none are found.
+    """
+    if version and version.lower() != 'base':
+        for base in _AS_BASE_CANDIDATES:
+            if os.path.isdir(os.path.join(base, version.upper())):
+                return base
+    for base in _AS_BASE_CANDIDATES:
+        if os.path.isdir(base):
+            return base
+    return _AS_BASE_CANDIDATES[0]
+
+
 def getASPath(version: str) -> str:
-    base = "C:\\BrAutomation"
+    base = _findASBase(version)
     if version.lower() == 'base':
         return base
     return os.path.join(base, version.upper(), 'Bin-en')
