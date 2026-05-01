@@ -2,43 +2,20 @@
  * File: ASCncConfig.py
  * Copyright (c) 2023 Loupe
  * https://loupe.team
- * 
+ *
  * This file is part of ASPython, licensed under the MIT License.
 '''
-'''
-AS Tools - Cnc Config
+"""Backwards-compatibility shim — use ``aspython.cnc`` instead."""
+import warnings as _warnings
 
-This package contains functions necessary to perform actions on 
-AS Cnc Configuration files outside of Automation Studio. 
-
-Requires lxml
-'''
-
-import os.path
-# import xml.etree.ElementTree as ET
-import lxml.etree as ET
+from aspython.cnc import listOfProcs  # noqa: F401
 
 __version__ = '0.0.0.1'
 
-def listOfProcs(tree, include_comments=False):
-    procs = []
-    for node in tree.xpath('//BuiltInProcs'):
-        for child in node:
-            if child.tag is not ET.Comment:
-                if include_comments and child.getprevious() is not None and child.getprevious().tag is ET.Comment:
-                    print("<!-- " + child.getprevious().text + "-->")
-                    procs.append(child.getprevious())
-                print(child.tag)
-                procs.append(child)
-    return procs
+_warnings.warn(
+    "Importing from 'ASCncConfig' is deprecated; use 'aspython.cnc' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-def main():
-    tree = ET.parse('test/gmcipubr.cnc')
-
-    # print(ET.tostring(tree, pretty_print=True))
-    listOfProcs(tree, include_comments=True)
-
-
-if __name__ == "__main__":
-    main()
-
+__all__ = ["listOfProcs"]

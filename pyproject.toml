@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aspython"
+description = "Python toolkit for programmatic interaction with B&R Automation Studio projects"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [{ name = "Loupe", email = "info@loupe.team" }]
+dynamic = ["version"]
+dependencies = [
+    "requests",
+]
+
+[project.optional-dependencies]
+cnc = [
+    "lxml",
+]
+dev = [
+    "pytest>=7",
+    "ruff",
+    "pyinstaller",
+    "lxml",
+]
+
+[project.scripts]
+aspython = "aspython.cli.main:main"
+
+[project.urls]
+Homepage = "https://loupe.team"
+Repository = "https://github.com/loupeteam/ASPython"
+
+[tool.setuptools]
+packages = ["aspython", "aspython.cli"]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "aspython._version.__version__" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
