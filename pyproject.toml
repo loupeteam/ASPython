@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aspython"
 description = "Python toolkit for programmatic interaction with B&R Automation Studio projects"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.8"
 authors = [{ name = "Loupe", email = "info@loupe.team" }]
 dynamic = ["version"]
@@ -30,11 +30,8 @@ Homepage = "https://loupe.team"
 Repository = "https://github.com/loupeteam/ASPython"
 
 [tool.setuptools]
-packages = ["aspython", "aspython.cli", "aspython.installer_assets"]
+packages = ["aspython", "aspython.cli"]
 include-package-data = true
-
-[tool.setuptools.package-data]
-"aspython.installer_assets" = ["*.iss", "*.bat", "*.ico"]
 
 [tool.setuptools.dynamic]
 version = { attr = "aspython._version.__version__" }
