@@ -68,10 +68,10 @@ class Library(xmlAsFile):
 
     def addObject(self, *paths):
         for path in paths:
-            if not os.path.isfile(path) and not os.path.isdir:
+            if not os.path.isfile(path) and not os.path.isdir(path):
                 raise FileNotFoundError(path)
             name = os.path.split(path)[1]
-            newPath = os.path.join(self.path, name)
+            newPath = os.path.join(self.dirPath, name)
             shutil.copyfile(path, newPath)
             self._addObjectElement(newPath)
         self.write()
@@ -83,10 +83,13 @@ class Library(xmlAsFile):
             self._convertXmlTag(self._xmlTag, 'Objects')
 
     def addDependency(self, *dependency):
+        deps_container = self.find('Dependencies')
+        if deps_container is None:
+            deps_container = ET.SubElement(self.root, 'Dependencies')
         for dependent in dependency:
-            if dependent is not Dependency:
+            if not isinstance(dependent, Dependency):
                 raise TypeError('Expected Dependency class got', type(dependent))
-            self.dependencies.append(self._createDependencyElement(dependent))
+            deps_container.append(self._createDependencyElement(dependent))
 
     def export(self, dest, buildFolder, buildConfigs, overwrite=False, binary=True, includeVersion=False) -> LibExportInfo:
         path = os.path.join(dest, self.name)

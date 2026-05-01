@@ -84,6 +84,8 @@ def getPkgType(path: str) -> Optional[str]:
 
 def getAsPathType(path: str) -> Optional[str]:
     """Returns 'relative', 'absolute', or None for an AS-style path string."""
+    if not path:
+        return None
     if path[0] == '\\' or path[0:2] == "..":
         return "relative"
     if path[0] == '/' or path[0:2] == "C:":

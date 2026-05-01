@@ -12,14 +12,17 @@ authors = [{ name = "Loupe", email = "info@loupe.team" }]
 dynamic = ["version"]
 dependencies = [
     "requests",
-    "lxml",
 ]
 
 [project.optional-dependencies]
+cnc = [
+    "lxml",
+]
 dev = [
     "pytest>=7",
     "ruff",
     "pyinstaller",
+    "lxml",
 ]
 
 [project.scripts]

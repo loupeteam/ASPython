@@ -9,8 +9,10 @@ HELP = 'Generate an Inno Setup installer (.exe) from an .iss script.'
 def add_subparser(subparsers):
     p = subparsers.add_parser(SUBCOMMAND, help=HELP, description=HELP)
     p.add_argument('script', type=str, help='Name of the iss script to compile')
-    p.add_argument('-o', '--output', type=str, help='Destination folder for the installer')
-    p.add_argument('-an', '--appName', type=str, help='Name of the app to create')
+    p.add_argument('-o', '--output', type=str, required=True,
+                   help='Destination folder for the installer')
+    p.add_argument('-an', '--appName', type=str, required=True,
+                   help='Name of the app to create')
     p.add_argument('-av', '--appVersion', type=str, default='1.0.0',
                    help='Version of the app to create')
     p.add_argument('-ap', '--appPublisher', type=str, default='Loupe',

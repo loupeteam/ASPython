@@ -108,7 +108,7 @@ class Project(xmlAsFile):
         exportInfo = ProjectExportInfo()
         for lib in exportLibs:
             logging.info('Exporting ' + lib.name + '...')
-            result = lib.export(dest, self.tempPath, self.buildConfigs,
+            result = lib.export(dest, self.tempPath, buildConfigs,
                                 overwrite=overwrite, binary=binary, includeVersion=includeVersion)
             exportInfo.addLibInfo(result)
         return exportInfo
@@ -182,9 +182,11 @@ class Project(xmlAsFile):
             )
         return process
 
-    def createArsim(self, *configNames, startSim: bool = False):
+    def createArsim(self, *configNames, destination=None, startSim: bool = False):
         '''*Deprecated* - see ``createSim``.'''
-        return self.createSim(configNames, startSim=startSim)
+        if destination is None:
+            destination = self.path
+        return self.createSim(*configNames, destination=destination, startSim=startSim)
 
     def createSim(self, *configNames, destination, startSim: bool = False):
         pviVersion = self.ASVersion.replace('AS', '', 1)

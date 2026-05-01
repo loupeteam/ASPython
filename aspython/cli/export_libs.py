@@ -18,11 +18,11 @@ def add_subparser(subparsers):
     p.add_argument('project', type=str, help='Path to AS project')
     p.add_argument('-dest', '--destination', type=str,
                    help='Destination path for exported libraries')
-    p.add_argument('-c', '--configuration', nargs='+', type=str,
+    p.add_argument('-c', '--configuration', nargs='+', type=str, required=True,
                    help='AS configuration(s)')
-    p.add_argument('-wl', '--whitelist', type=str, nargs='+', default='',
+    p.add_argument('-wl', '--whitelist', type=str, nargs='+', default=[],
                    help='Desired libraries (trumps the blacklist)')
-    p.add_argument('-bl', '--blacklist', type=str, nargs='+', default='',
+    p.add_argument('-bl', '--blacklist', type=str, nargs='+', default=[],
                    help='Ignored libraries (glob style: *myLibName*)')
     p.add_argument('-o', '--overwrite', action='store_true',
                    help='Overwrite previously-exported libraries')
