@@ -36,8 +36,8 @@ def packageHMI(source: str, appName: str, output: str, appPublisher: str, appVer
         '--arch=x64',
         f'--out={output}',
         '--overwrite',
-        f'--win32metadata.CompanyName="{appPublisher}"',
-        f'--win32metadata.FileDescription="Build #{appVersion}"',
+        f'--win32metadata.CompanyName={appPublisher}',
+        f'--win32metadata.FileDescription=Build #{appVersion}',
     ]
     logging.info(command)
-    subprocess.run(command, encoding='utf-8', shell=True)
+    subprocess.run(command, encoding='utf-8', shell=False)
