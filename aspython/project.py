@@ -73,7 +73,7 @@ class Project(xmlAsFile):
                     package = Package(os.path.join(root, name))
                     objects = package.findall('Objects', 'Object')
                     for item in objects:
-                        if (item.get('Type', '').lower() == 'library') & (item.get('Reference', '').lower() == 'true'):
+                        if (item.get('Type', '').lower() == 'library') and (item.get('Reference', '').lower() == 'true'):
                             path = convertAsPathToWinPath(item.text)
                             if path.startswith('.'):
                                 path = os.path.abspath(os.path.join(os.path.dirname(self.path), path))
