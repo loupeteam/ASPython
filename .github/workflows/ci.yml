@@ -27,6 +27,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install lpm
+        run: npm install -g @loupeteam/lpm
+
       - name: Lint (ruff)
         run: ruff check aspython tests
         continue-on-error: true
