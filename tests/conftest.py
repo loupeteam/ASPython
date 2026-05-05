@@ -35,11 +35,10 @@ def pytest_configure(config):
     sys.stderr.write('\nAsProject not found — generating via lpm...\n')
 
     try:
-        _run_lpm('init', '--silent', cwd=AS_PROJECT)
+        _run_lpm('-s', 'init', cwd=AS_PROJECT)
         for package in _LPM_PACKAGES:
             sys.stderr.write(f'  lpm install {package}\n')
-            _run_lpm('install', package, '--silent', cwd=AS_PROJECT)
-        # _run_lpm('install', '--silent', cwd=AS_PROJECT) # See comment above about plain "lpm install"
+            _run_lpm('-s', 'install', package, cwd=AS_PROJECT)
     except FileNotFoundError:
         sys.stderr.write(
             'ERROR: lpm not found.\n'
