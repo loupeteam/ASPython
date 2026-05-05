@@ -107,4 +107,4 @@ def buildASProject(
                     logging.debug(data)
             process.poll()
 
-    return process
+    return subprocess.CompletedProcess(commandLine, process.returncode)
