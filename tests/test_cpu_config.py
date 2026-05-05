@@ -34,8 +34,9 @@ def test_ar_version(cpu_config):
     assert cpu_config.arVersion == '6.6.2'
 
 
-def test_pre_build_step_missing_returns_none(cpu_config):
-    assert cpu_config.preBuildStep is None
+def test_pre_build_step_missing_returns_none(cpu_config_copy):
+    del cpu_config_copy.buildElement.attrib['PreBuildStep']
+    assert cpu_config_copy.preBuildStep is None
 
 
 # ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 # Make the repo-root packages importable when running ``pytest`` without an editable install.
 _repo_root = Path(__file__).resolve().parent.parent
 if str(_repo_root) not in sys.path:
@@ -49,3 +51,23 @@ def pytest_configure(config):
             f'ERROR: lpm setup failed (exit {exc.returncode}).\n'
             'AsProject-dependent tests will fail.\n'
         )
+
+
+# Files whose tests all require a fully-generated AsProject (lpm).
+_AS_PROJECT_DEPENDENT = {
+    'test_asproject.py',
+    'test_build.py',
+    'test_cpu_config.py',
+    'test_deployment.py',
+    'test_library.py',
+}
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip AsProject-dependent tests when the fixture project is not set up."""
+    if (AS_PROJECT / 'AsProject.apj').exists():
+        return
+    skip = pytest.mark.skip(reason='AsProject not available (lpm not installed)')
+    for item in items:
+        if Path(item.fspath).name in _AS_PROJECT_DEPENDENT:
+            item.add_marker(skip)

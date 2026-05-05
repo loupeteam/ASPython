@@ -17,6 +17,8 @@ CONFIGURATION = 'Intel'
 
 
 def _as_installed() -> bool:
+    if not (AS_PROJECT / 'AsProject.apj').exists():
+        return False
     project = Project(str(AS_PROJECT))
     build_exe = getASBuildPath(project.ASVersion)
     return os.path.isfile(build_exe)
