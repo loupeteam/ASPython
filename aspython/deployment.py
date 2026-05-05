@@ -60,7 +60,7 @@ class SwDeploymentTable(xmlAsFile):
         }
         for attributeName in attributeOverrides:
             attributes[attributeName] = attributeOverrides[attributeName]
-        element = ET.Element('LibraryObject', attrib=attributes)
+        element = ET.Element(self.nameSpaceFormatted + 'LibraryObject', attrib=attributes)
         element.tail = "\n"
         return element
 
@@ -83,7 +83,7 @@ class SwDeploymentTable(xmlAsFile):
             'Language': language,
             'Debugging': 'true',
         }
-        element = ET.Element('Task', attrib=attributes)
+        element = ET.Element(self.nameSpaceFormatted + 'Task', attrib=attributes)
         element.tail = "\n"
         return element
 

@@ -85,7 +85,7 @@ class Library(xmlAsFile):
     def addDependency(self, *dependency):
         deps_container = self.find('Dependencies')
         if deps_container is None:
-            deps_container = ET.SubElement(self.root, 'Dependencies')
+            deps_container = ET.SubElement(self.root, self.nameSpaceFormatted + 'Dependencies')
         for dependent in dependency:
             if not isinstance(dependent, Dependency):
                 raise TypeError('Expected Dependency class got', type(dependent))
@@ -184,14 +184,13 @@ class Library(xmlAsFile):
         element.tail = "\n"
         return element
 
-    @staticmethod
-    def _createDependencyElement(dependency: Dependency):
+    def _createDependencyElement(self, dependency: Dependency):
         attributes = {'ObjectName': dependency.name}
         if dependency.minVersion:
             attributes['FromVersion'] = dependency.minVersion
         if dependency.maxVersion:
             attributes['ToVersion'] = dependency.maxVersion
-        return ET.Element('Dependency', attributes)
+        return ET.Element(self.nameSpaceFormatted + 'Dependency', attributes)
 
     @staticmethod
     def _getXmlTag(package: ET.ElementTree) -> str:
