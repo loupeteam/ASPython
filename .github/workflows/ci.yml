@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true
 
       - name: Log in to lpm
-        run: lpm login -t ${{ secrets.GITHUB_TOKEN }}
+        run: lpm login -t ${{ secrets.GITHUB_TOKEN }} --no-check
 
       - name: Run tests
         run: pytest -q
