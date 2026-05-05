@@ -42,6 +42,9 @@ jobs:
         run: ruff check aspython tests
         continue-on-error: true
 
+      - name: Log in to lpm
+        run: lpm login -t ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run tests
         run: pytest -q
 
