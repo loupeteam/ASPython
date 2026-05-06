@@ -39,17 +39,16 @@ jobs:
       - name: Install lpm
         run: npm install -g @loupeteam/lpm@1.2.0-beta.1
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.LPM_TOKEN }}
 
       - name: Lint (ruff)
         run: ruff check aspython tests
         continue-on-error: true
 
-      - name: Log in to lpm
-        run: lpm login -t ${{ secrets.LPM_TOKEN }} --no-auth-check
-
       - name: Run tests
         run: pytest -q
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.LPM_TOKEN }}
 
   build-exe:
     needs: test
