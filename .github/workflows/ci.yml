@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true
 
       - name: Run tests
-        run: pytest -q
+        run: pytest -q -rs
         env:
           NODE_AUTH_TOKEN: ${{ secrets.LPM_TOKEN }}
 
