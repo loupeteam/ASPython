@@ -50,6 +50,8 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-exe:
     needs: test
