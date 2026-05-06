@@ -46,12 +46,10 @@ jobs:
         continue-on-error: true
 
       - name: Log in to lpm
-        run: lpm login -t ${{ secrets.GITHUB_TOKEN }} --no-auth-check
+        run: lpm login -t ${{ secrets.LPM_TOKEN }} --no-auth-check
 
       - name: Run tests
         run: pytest -q
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-exe:
     needs: test
