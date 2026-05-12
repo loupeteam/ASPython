@@ -10,10 +10,13 @@ on:
 jobs:
   test:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
     steps:
       - uses: actions/checkout@v4
 
@@ -27,12 +30,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@loupeteam'
+
+      - name: Install lpm
+        run: npm install -g @loupeteam/lpm@1.2.0
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.LPM_TOKEN }}
+
       - name: Lint (ruff)
         run: ruff check aspython tests
         continue-on-error: true
 
       - name: Run tests
-        run: pytest -q
+        run: pytest -q -rs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.LPM_TOKEN }}
 
   build-exe:
     needs: test
