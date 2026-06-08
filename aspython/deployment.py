@@ -106,3 +106,23 @@ class SwDeploymentTable(xmlAsFile):
     @property
     def libraries(self) -> List:
         return [element.get('Name', 'Unknown') for element in self.findall('Libraries', 'LibraryObject')]
+
+    @property
+    def taskElements(self) -> List[ET.Element]:
+        """Every ``<Task>`` deployed in this table, across all task classes."""
+        tasks: List[ET.Element] = []
+        for tc in self.findall('TaskClass'):
+            tasks.extend(tc.findall(self.nameSpaceFormatted + 'Task'))
+        return tasks
+
+    @property
+    def taskNames(self) -> List[str]:
+        return [t.get('Name', '') for t in self.taskElements]
+
+    @property
+    def taskSources(self) -> List[str]:
+        """The ``Source`` of every deployed task (e.g. ``Pkg.Sub.Name.prg``).
+
+        Tasks with an empty ``Source`` (e.g. binary-only HMI tasks) are omitted.
+        """
+        return [src for t in self.taskElements if (src := t.get('Source'))]

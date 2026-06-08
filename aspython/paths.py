@@ -105,6 +105,51 @@ def convertWinPathToAsPath(winPath: str) -> str:
     return os.path.join('\\', os.path.normpath(winPath))
 
 
+def resolveReferencePath(refText: str, baseDir: str, projectRoot: str) -> str:
+    """Resolve a package ``Reference="true"`` object's text to a Windows path.
+
+    AS stores reference targets in a few shapes:
+
+    * absolute (``C:\\...``)                       -> used as-is
+    * project-root relative with a leading ``\\``   (``\\Logical\\...``)
+    * project-root relative with no leading slash   (``Physical\\Cfg\\Cpu.sw``)
+    * file relative, starting with ``..``           (``..\\..\\Other\\Cpu.sw``)
+
+    *baseDir* is the directory holding the referencing package; *projectRoot*
+    is the AS project directory (the one containing the ``.apj``). The returned
+    path is normalized but not required to exist.
+    """
+    if refText is None:
+        return ''
+    refText = refText.strip()
+    if not refText:
+        return ''
+    native = refText.replace('\\', os.sep).replace('/', os.sep)
+    if getAsPathType(refText) == 'absolute' or os.path.isabs(native):
+        return os.path.normpath(native)
+    if native.startswith('..'):
+        return os.path.normpath(os.path.join(baseDir, native))
+    # Leading-slash and plain forms are both project-root relative in AS.
+    return os.path.normpath(os.path.join(projectRoot, native.lstrip(os.sep)))
+
+
+def findProjectRoot(startPath: str) -> Optional[str]:
+    """Walk up from *startPath* to the AS project dir (the one with a ``.apj``)."""
+    current = os.path.abspath(startPath)
+    if os.path.isfile(current):
+        current = os.path.dirname(current)
+    while True:
+        try:
+            if any(f.lower().endswith('.apj') for f in os.listdir(current)):
+                return current
+        except OSError:
+            return None
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+
+
 def getLibraryPathInPackage(libraryPackagePath: str, libraryName: str) -> Optional[str]:
     """Return the path to ``<libraryName>.lby`` within a Libraries package, resolving references."""
     # Local import to avoid a circular package <-> paths dependency at import time.

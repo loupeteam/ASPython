@@ -10,6 +10,8 @@ import xml.etree.ElementTree as ET
 from typing import List, Union
 
 from .build import batchBuildAsProject
+from .config import CpuConfig
+from .deployment import SwDeploymentTable
 from .library import Library
 from .models import BuildConfig, ProjectExportInfo
 from .package import Package
@@ -212,6 +214,47 @@ class Project(xmlAsFile):
 
     def getConfigByName(self, configName: str) -> BuildConfig:
         return next(i for i in self.buildConfigs if i.name == configName)
+
+    def getConfigCpus(self, configName: str) -> List[CpuConfig]:
+        """Return a :class:`CpuConfig` for each CPU deployed in *configName*.
+
+        The CPUs are read from the configuration's ``Config.pkg`` (objects of
+        ``Type="Cpu"``), so this works regardless of the hardware folder name
+        and supports configurations that contain more than one CPU.
+        """
+        configDir = os.path.join(self.physicalPath, configName)
+        configPkg = os.path.join(configDir, 'Config.pkg')
+        cpus: List[CpuConfig] = []
+        if not os.path.isfile(configPkg):
+            return cpus
+        for obj in Package(configPkg).objectList:
+            if obj.get('Type', '').lower() != 'cpu':
+                continue
+            cpuPkg = os.path.join(configDir, (obj.text or '').strip(), 'Cpu.pkg')
+            if os.path.isfile(cpuPkg):
+                cpus.append(CpuConfig(cpuPkg))
+        return cpus
+
+    def getConfigSwTables(self, configName: str) -> List[SwDeploymentTable]:
+        """Return every software-deployment table (``.sw``) used by *configName*.
+
+        One table is returned per CPU. References to another configuration's
+        ``.sw`` are resolved transparently, so a configuration that merely
+        points at a shared deployment still yields its real task/library list.
+        """
+        tables: List[SwDeploymentTable] = []
+        for cpu in self.getConfigCpus(configName):
+            table = cpu.getSwDeploymentTable(self.dirPath)
+            if table is not None:
+                tables.append(table)
+        return tables
+
+    def getConfigTaskSources(self, configName: str) -> List[str]:
+        """Return the ``Source`` of every task deployed by *configName*'s CPUs."""
+        sources: List[str] = []
+        for table in self.getConfigSwTables(configName):
+            sources.extend(table.taskSources)
+        return sources
 
     def getConstantValue(self, filePath: str, varName: str):
         fullFilePath = os.path.join(self.dirPath, filePath)
