@@ -6,10 +6,12 @@ from aspython.paths import (
     _findASBase,
     convertAsPathToWinPath,
     convertWinPathToAsPath,
+    findProjectRoot,
     getASBuildPath,
     getASPath,
     getAsPathType,
     getPVITransferPath,
+    resolveReferencePath,
 )
 
 
@@ -73,3 +75,54 @@ def test_path_round_trip_relative():
     assert win.startswith('.')
     back = convertWinPathToAsPath(win)
     assert back.startswith('\\')
+
+
+# ---------------------------------------------------------------------------
+# resolveReferencePath -- resolving Cpu.pkg/Package.pkg Reference="true" targets
+# ---------------------------------------------------------------------------
+
+ROOT = os.path.join('C:\\', 'proj')
+BASE = os.path.join(ROOT, 'Physical', 'CfgB', 'Cpu')
+
+
+def test_resolve_reference_project_root_relative_no_slash():
+    # The shape seen in real cross-config .sw references.
+    ref = 'Physical\\CfgA\\Cpu\\Cpu.sw'
+    assert resolveReferencePath(ref, BASE, ROOT) == \
+        os.path.join(ROOT, 'Physical', 'CfgA', 'Cpu', 'Cpu.sw')
+
+
+def test_resolve_reference_leading_slash_is_project_root():
+    ref = '\\Physical\\CfgA\\Cpu\\Cpu.sw'
+    assert resolveReferencePath(ref, BASE, ROOT) == \
+        os.path.join(ROOT, 'Physical', 'CfgA', 'Cpu', 'Cpu.sw')
+
+
+def test_resolve_reference_dotdot_is_base_relative():
+    ref = '..\\..\\CfgA\\Cpu\\Cpu.sw'
+    assert resolveReferencePath(ref, BASE, ROOT) == \
+        os.path.normpath(os.path.join(BASE, ref))
+
+
+def test_resolve_reference_absolute_kept():
+    ref = 'C:\\elsewhere\\Cpu.sw'
+    assert resolveReferencePath(ref, BASE, ROOT) == os.path.normpath('C:\\elsewhere\\Cpu.sw')
+
+
+def test_resolve_reference_empty():
+    assert resolveReferencePath('', BASE, ROOT) == ''
+    assert resolveReferencePath(None, BASE, ROOT) == ''
+
+
+def test_find_project_root(tmp_path):
+    proj = tmp_path / 'MyProj'
+    deep = proj / 'Physical' / 'CfgA' / 'Cpu'
+    deep.mkdir(parents=True)
+    (proj / 'MyProj.apj').write_text('<Project/>')
+    assert findProjectRoot(str(deep)) == str(proj)
+
+
+def test_find_project_root_none_when_absent(tmp_path):
+    deep = tmp_path / 'nope' / 'deeper'
+    deep.mkdir(parents=True)
+    assert findProjectRoot(str(deep)) is None

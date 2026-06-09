@@ -56,6 +56,7 @@ def pytest_configure(config):
 _AS_PROJECT_DEPENDENT = {
     'test_asproject.py',
     'test_build.py',
+    'test_config_traversal.py',
     'test_cpu_config.py',
     'test_deployment.py',
     'test_library.py',

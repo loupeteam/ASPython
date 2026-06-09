@@ -105,6 +105,57 @@ def convertWinPathToAsPath(winPath: str) -> str:
     return os.path.join('\\', os.path.normpath(winPath))
 
 
+def resolveReferencePath(refText: Optional[str], baseDir: str, projectRoot: str) -> str:
+    """Resolve a package ``Reference="true"`` object's text to a Windows path.
+
+    AS stores reference targets in a few shapes:
+
+    * absolute (``C:\\...``)                       -> used as-is
+    * project-root relative with a leading ``\\``   (``\\Logical\\...``)
+    * project-root relative with no leading slash   (``Physical\\Cfg\\Cpu.sw``)
+    * file relative, starting with ``..``           (``..\\..\\Other\\Cpu.sw``)
+
+    *baseDir* is the directory holding the referencing package; *projectRoot*
+    is the AS project directory (the one containing the ``.apj``). The returned
+    path is normalized but not required to exist.
+    """
+    if refText is None:
+        return ''
+    refText = refText.strip()
+    if not refText:
+        return ''
+    native = refText.replace('\\', os.sep).replace('/', os.sep)
+    # A drive-qualified (``C:\\...``) or UNC (``\\\\server\\share``) path is the
+    # only truly absolute form. A bare leading separator is project-root
+    # relative in AS -- and ``os.path.isabs`` disagrees about that across Python
+    # versions (ntpath treated ``\\foo`` as absolute before 3.13), so test the
+    # drive explicitly instead of relying on it.
+    drive = os.path.splitdrive(native)[0]
+    if drive or getAsPathType(refText) == 'absolute':
+        return os.path.normpath(native)
+    if native.startswith('..'):
+        return os.path.normpath(os.path.join(baseDir, native))
+    # Leading-slash and plain forms are both project-root relative in AS.
+    return os.path.normpath(os.path.join(projectRoot, native.lstrip(os.sep)))
+
+
+def findProjectRoot(startPath: str) -> Optional[str]:
+    """Walk up from *startPath* to the AS project dir (the one with a ``.apj``)."""
+    current = os.path.abspath(startPath)
+    if os.path.isfile(current):
+        current = os.path.dirname(current)
+    while True:
+        try:
+            if any(f.lower().endswith('.apj') for f in os.listdir(current)):
+                return current
+        except OSError:
+            return None
+        parent = os.path.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+
+
 def getLibraryPathInPackage(libraryPackagePath: str, libraryName: str) -> Optional[str]:
     """Return the path to ``<libraryName>.lby`` within a Libraries package, resolving references."""
     # Local import to avoid a circular package <-> paths dependency at import time.
