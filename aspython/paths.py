@@ -125,7 +125,13 @@ def resolveReferencePath(refText: str, baseDir: str, projectRoot: str) -> str:
     if not refText:
         return ''
     native = refText.replace('\\', os.sep).replace('/', os.sep)
-    if getAsPathType(refText) == 'absolute' or os.path.isabs(native):
+    # A drive-qualified (``C:\\...``) or UNC (``\\\\server\\share``) path is the
+    # only truly absolute form. A bare leading separator is project-root
+    # relative in AS -- and ``os.path.isabs`` disagrees about that across Python
+    # versions (ntpath treated ``\\foo`` as absolute before 3.13), so test the
+    # drive explicitly instead of relying on it.
+    drive = os.path.splitdrive(native)[0]
+    if drive or getAsPathType(refText) == 'absolute':
         return os.path.normpath(native)
     if native.startswith('..'):
         return os.path.normpath(os.path.join(baseDir, native))
