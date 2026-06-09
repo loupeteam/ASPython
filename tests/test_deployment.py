@@ -46,6 +46,28 @@ def test_task_classes_exist(deployment):
 
 
 # ---------------------------------------------------------------------------
+# Task enumeration (taskElements / taskNames / taskSources)
+# ---------------------------------------------------------------------------
+
+def test_task_elements_non_empty(deployment):
+    assert len(deployment.taskElements) > 0
+
+
+def test_task_names_align_with_elements(deployment):
+    assert len(deployment.taskNames) == len(deployment.taskElements)
+    assert all(isinstance(n, str) for n in deployment.taskNames)
+
+
+def test_task_sources_are_truthy_and_bounded(deployment):
+    sources = deployment.taskSources
+    # Every reported source is a non-empty string ...
+    assert all(s for s in sources)
+    # ... and tasks with an empty Source are excluded, so sources cannot
+    # outnumber the tasks themselves.
+    assert len(sources) <= len(deployment.taskElements)
+
+
+# ---------------------------------------------------------------------------
 # deployLibrary
 # ---------------------------------------------------------------------------
 

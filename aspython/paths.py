@@ -105,7 +105,7 @@ def convertWinPathToAsPath(winPath: str) -> str:
     return os.path.join('\\', os.path.normpath(winPath))
 
 
-def resolveReferencePath(refText: str, baseDir: str, projectRoot: str) -> str:
+def resolveReferencePath(refText: Optional[str], baseDir: str, projectRoot: str) -> str:
     """Resolve a package ``Reference="true"`` object's text to a Windows path.
 
     AS stores reference targets in a few shapes:

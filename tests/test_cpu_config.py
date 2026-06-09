@@ -40,6 +40,23 @@ def test_pre_build_step_missing_returns_none(cpu_config_copy):
 
 
 # ---------------------------------------------------------------------------
+# Software-configuration (.sw) resolution
+# ---------------------------------------------------------------------------
+
+def test_software_config_path_resolves_existing_sw(cpu_config):
+    sw = cpu_config.getSoftwareConfigPath()
+    assert sw is not None
+    assert sw.lower().endswith('.sw')
+    assert Path(sw).is_file()
+
+
+def test_sw_deployment_table_is_loaded(cpu_config):
+    table = cpu_config.getSwDeploymentTable()
+    assert table is not None
+    assert 'standard' in table.libraries
+
+
+# ---------------------------------------------------------------------------
 # Write roundtrips
 # ---------------------------------------------------------------------------
 
